@@ -2,11 +2,11 @@
 // Use of this source code is governed by a the MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:math' show min, max;
+
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:meta/meta.dart';
-
-import 'dart:math' show min, max;
 
 /// Called every layout to provide the amount of stickyness a header is in.
 /// This lets the widgets animate their content and provide feedback.
@@ -24,52 +24,98 @@ class RenderStickyHeader extends RenderBox
     with
         ContainerRenderObjectMixin<RenderBox, MultiChildLayoutParentData>,
         RenderBoxContainerDefaultsMixin<RenderBox, MultiChildLayoutParentData> {
-
   RenderStickyHeaderCallback _callback;
   ScrollableState _scrollable;
   bool _overlapHeaders;
+  BuildContext _context;
+  bool _offsetFromHeaders;
+  double _contentLeftOffset;
+  double _contentRightOffset;
+  double _hardcodedHeadersWidth;
 
   RenderStickyHeader({
     @required ScrollableState scrollable,
     RenderStickyHeaderCallback callback,
+    BuildContext context,
     bool overlapHeaders: false,
+    offsetFromHeaders: false,
+    hardcodedHeadersWidth,
+    contentLeftOffset: 0.0,
+    contentRightOffset: 0.0,
     RenderBox header,
     RenderBox content,
   })  : assert(scrollable != null),
         _scrollable = scrollable,
         _callback = callback,
-        _overlapHeaders = overlapHeaders {
+        _context = context,
+        _overlapHeaders = overlapHeaders,
+        _offsetFromHeaders = offsetFromHeaders,
+        _hardcodedHeadersWidth = hardcodedHeadersWidth,
+        _contentLeftOffset = contentLeftOffset,
+        _contentRightOffset = contentRightOffset {
     if (content != null) add(content);
     if (header != null) add(header);
   }
 
-  set scrollable(ScrollableState newValue) {
-    assert(newValue != null);
-    if (_scrollable == newValue) {
+  set scrollable(ScrollableState value) {
+    assert(value != null);
+    if (_scrollable == value) {
       return;
     }
     final ScrollableState oldValue = _scrollable;
-    _scrollable = newValue;
+    _scrollable = value;
     markNeedsLayout();
     if (attached) {
       oldValue.position?.removeListener(markNeedsLayout);
-      newValue.position?.addListener(markNeedsLayout);
+      value.position?.addListener(markNeedsLayout);
     }
   }
 
-  set callback(RenderStickyHeaderCallback newValue) {
-    if (_callback == newValue) {
+  set callback(RenderStickyHeaderCallback value) {
+    if (_callback == value) {
       return;
     }
-    _callback = newValue;
+    _callback = value;
     markNeedsLayout();
   }
 
-  set overlapHeaders(bool newValue) {
-    if (_overlapHeaders == newValue) {
+  set overlapHeaders(bool value) {
+    if (_overlapHeaders == value) {
       return;
     }
-    _overlapHeaders = newValue;
+    _overlapHeaders = value;
+    markNeedsLayout();
+  }
+
+  set hardcodedHeadersWidth(double value) {
+    if (_hardcodedHeadersWidth == value) {
+      return;
+    }
+    _hardcodedHeadersWidth = value;
+    markNeedsLayout();
+  }
+
+  set offsetFromHeaders(bool value) {
+    if (_offsetFromHeaders == value) {
+      return;
+    }
+    _offsetFromHeaders = value;
+    markNeedsLayout();
+  }
+
+  set contentLeftOffset(double value) {
+    if (_contentLeftOffset == value) {
+      return;
+    }
+    _contentLeftOffset = value;
+    markNeedsLayout();
+  }
+
+  set contentRightOffset(double value) {
+    if (_contentRightOffset == value) {
+      return;
+    }
+    _contentRightOffset = value;
     markNeedsLayout();
   }
 
@@ -92,6 +138,89 @@ class RenderStickyHeader extends RenderBox
 
   @override
   void performLayout() {
+    if (_overlapHeaders && _offsetFromHeaders)
+      performSideHeaderLayout();
+    else
+      performNormalLayout();
+  }
+
+  void performSideHeaderLayout() {
+    // ensure we have header and content boxes
+    assert(childCount == 2);
+
+    // layout both header and content widget
+    final parentWidth = MediaQuery
+        .of(_context)
+        .size
+        .width;
+
+    final childConstraints = BoxConstraints(
+      minWidth: 0.0,
+      maxWidth: parentWidth,
+      minHeight: 0.0,
+      maxHeight: double.infinity,
+    );
+
+    _headerBox.layout(childConstraints, parentUsesSize: true);
+
+    final headerWidth = _hardcodedHeadersWidth == null
+        ? _headerBox.size.width
+        : _hardcodedHeadersWidth;
+    final headerHeight = _headerBox.size.height;
+
+    final maxWidth =
+        parentWidth - headerWidth - _contentRightOffset - _contentLeftOffset;
+
+    // copy needs because size of _headerBox calculates only after .layout() method
+    // without knowing the size _headerBox will not be able to calculate the size of the layout to _contentBox didn't go abroad
+    final childConstraintsWithContent = childConstraints.copyWith(
+      minWidth: headerWidth,
+      maxWidth: maxWidth,
+      minHeight: headerHeight,
+      maxHeight: double.infinity,
+    );
+
+    _contentBox.layout(childConstraintsWithContent, parentUsesSize: true);
+
+    final contentHeight = _contentBox.size.height;
+
+    // determine size of ourselves based on content widget
+    final width = max(constraints.minWidth, _contentBox.size.width);
+    final height = max(constraints.minHeight,
+        _overlapHeaders ? contentHeight : headerHeight + contentHeight);
+    size = Size(width, height);
+
+    assert(size.width == constraints.constrainWidth(width));
+    assert(size.height == constraints.constrainHeight(height));
+    assert(size.isFinite);
+
+    // place content underneath header
+    final contentParentData =
+    _contentBox.parentData as MultiChildLayoutParentData;
+
+    contentParentData.offset = Offset(
+        _offsetFromHeaders ? headerWidth + _contentLeftOffset : 0.0,
+        _overlapHeaders ? 0.0 : headerHeight);
+
+    // determine by how much the header should be stuck to the top
+    final double stuckOffset = determineStuckOffset();
+
+    // place header over content relative to scroll offset
+    final double maxOffset = height - headerHeight;
+    final headerParentData =
+    _headerBox.parentData as MultiChildLayoutParentData;
+    headerParentData.offset =
+        Offset(0.0, max(0.0, min(-stuckOffset, maxOffset)));
+
+    // report to widget how much the header is stuck.
+    if (_callback != null) {
+      final stuckAmount =
+          max(min(headerHeight, stuckOffset), -headerHeight) / headerHeight;
+      _callback(stuckAmount);
+    }
+  }
+
+  void performNormalLayout() {
     // ensure we have header and content boxes
     assert(childCount == 2);
 
@@ -107,26 +236,31 @@ class RenderStickyHeader extends RenderBox
     final width = max(constraints.minWidth, _contentBox.size.width);
     final height = max(constraints.minHeight,
         _overlapHeaders ? contentHeight : headerHeight + contentHeight);
-    size = new Size(width, height);
+    size = Size(width, height);
     assert(size.width == constraints.constrainWidth(width));
     assert(size.height == constraints.constrainHeight(height));
     assert(size.isFinite);
 
     // place content underneath header
-    final contentParentData = _contentBox.parentData as MultiChildLayoutParentData;
-    contentParentData.offset = new Offset(0.0, _overlapHeaders ? 0.0 : headerHeight);
+    final contentParentData =
+    _contentBox.parentData as MultiChildLayoutParentData;
+    contentParentData.offset =
+        Offset(0.0, _overlapHeaders ? 0.0 : headerHeight);
 
     // determine by how much the header should be stuck to the top
     final double stuckOffset = determineStuckOffset();
 
     // place header over content relative to scroll offset
     final double maxOffset = height - headerHeight;
-    final headerParentData = _headerBox.parentData as MultiChildLayoutParentData;
-    headerParentData.offset = new Offset(0.0, max(0.0, min(-stuckOffset, maxOffset)));
+    final headerParentData =
+    _headerBox.parentData as MultiChildLayoutParentData;
+    headerParentData.offset =
+        Offset(0.0, max(0.0, min(-stuckOffset, maxOffset)));
 
     // report to widget how much the header is stuck.
     if (_callback != null) {
-      final stuckAmount = max(min(headerHeight, stuckOffset), -headerHeight) / headerHeight;
+      final stuckAmount =
+          max(min(headerHeight, stuckOffset), -headerHeight) / headerHeight;
       _callback(stuckAmount);
     }
   }
@@ -147,7 +281,7 @@ class RenderStickyHeader extends RenderBox
   void setupParentData(RenderObject child) {
     super.setupParentData(child);
     if (child.parentData is! MultiChildLayoutParentData) {
-      child.parentData = new MultiChildLayoutParentData();
+      child.parentData = MultiChildLayoutParentData();
     }
   }
 
@@ -163,14 +297,16 @@ class RenderStickyHeader extends RenderBox
 
   @override
   double computeMinIntrinsicHeight(double width) {
-    return _overlapHeaders ? _contentBox.getMinIntrinsicHeight(width)
+    return _overlapHeaders
+        ? _contentBox.getMinIntrinsicHeight(width)
         : (_headerBox.getMinIntrinsicHeight(width) +
             _contentBox.getMinIntrinsicHeight(width));
   }
 
   @override
   double computeMaxIntrinsicHeight(double width) {
-    return _overlapHeaders ? _contentBox.getMaxIntrinsicHeight(width)
+    return _overlapHeaders
+        ? _contentBox.getMaxIntrinsicHeight(width)
         : (_headerBox.getMaxIntrinsicHeight(width) +
             _contentBox.getMaxIntrinsicHeight(width));
   }
