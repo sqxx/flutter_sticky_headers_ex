@@ -1,11 +1,10 @@
-[![Flutter Community: sticky_headers](https://fluttercommunity.dev/_github/header/sticky_headers)](https://github.com/fluttercommunity/community)
-
-# Flutter Sticky Headers
-
-[![pub package](https://img.shields.io/pub/v/sticky_headers.svg)](https://pub.dartlang.org/packages/sticky_headers)
+# Flutter Sticky Headers Ex
 
 Lets you place headers on scrollable content that will stick to the top of the container
 whilst the content is scrolled.
+
+## Differences from the original library
+The ability to create side sticky headers has been added. See example #4
 
 ## Usage
 You can place a `StickyHeader` or `StickyHeaderBuilder`
@@ -15,7 +14,9 @@ inside any scrollable content, such as:  `ListView`, `GridView`, `CustomScrollVi
 Depend on it:
 ```yaml
 dependencies:
-  sticky_headers: "^0.1.8"
+  sticky_headers:
+    git:
+      url: git://github.com/sqxx/flutter_sticky_headers_ex.git
 ```
 
 Import it:
@@ -49,17 +50,21 @@ class Example extends StatelessWidget {
 }
 ```
 
+For more, see example/lib/main.dart
 
 ## Examples
 
 ### Example 1 - Headers and Content
-![Demo 1](https://github.com/slightfoot/flutter_sticky_headers/raw/gh-pages/demo1.gif)
+![Demo 1](https://github.com/sqxx/flutter_sticky_headers_ex/img/1.gif)
 
 ### Example 2 - Animated Headers with Content
-![Demo 2](https://github.com/slightfoot/flutter_sticky_headers/raw/gh-pages/demo2.gif)
+![Demo 2](https://github.com/sqxx/flutter_sticky_headers_ex/img/2.gif)
 
 ### Example 3 - Headers overlapping the Content
-![Demo 3](https://github.com/slightfoot/flutter_sticky_headers/raw/gh-pages/demo3.gif)
+![Demo 3](https://github.com/sqxx/flutter_sticky_headers_ex/img/3.gif)
+
+### Example 4 - Side headers with the Content
+![Demo 3](https://github.com/sqxx/flutter_sticky_headers_ex/img/4.gif)
 
 ## Bugs/Requests
 If you encounter any problems feel free to open an issue. If you feel the library is
