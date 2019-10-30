@@ -55,16 +55,16 @@ For more, see example/lib/main.dart
 ## Examples
 
 ### Example 1 - Headers and Content
-![Demo 1](https://github.com/sqxx/flutter_sticky_headers_ex/img/1.gif)
+![Demo 1](https://github.com/sqxx/flutter_sticky_headers_ex/raw/master/img/1.gif)
 
 ### Example 2 - Animated Headers with Content
-![Demo 2](https://github.com/sqxx/flutter_sticky_headers_ex/img/2.gif)
+![Demo 2](https://github.com/sqxx/flutter_sticky_headers_ex/raw/master/img/2.gif)
 
 ### Example 3 - Headers overlapping the Content
-![Demo 3](https://github.com/sqxx/flutter_sticky_headers_ex/img/3.gif)
+![Demo 3](https://github.com/sqxx/flutter_sticky_headers_ex/raw/master/img/3.gif)
 
 ### Example 4 - Side headers with the Content
-![Demo 3](https://github.com/sqxx/flutter_sticky_headers_ex/img/4.gif)
+![Demo 3](https://github.com/sqxx/flutter_sticky_headers_ex/raw/master/img/4.gif)
 
 ## Bugs/Requests
 If you encounter any problems feel free to open an issue. If you feel the library is

@@ -65,6 +65,7 @@ class Example1 extends StatelessWidget {
         return Material(
           color: Colors.grey[300],
           child: StickyHeader(
+            context: context,
             header: Container(
               height: 50.0,
               color: Colors.blueGrey[700],
@@ -104,7 +105,7 @@ class Example2 extends StatelessWidget {
               return Container(
                 height: 50.0,
                 color:
-                Color.lerp(Colors.blue[700], Colors.red[700], stuckAmount),
+                    Color.lerp(Colors.blue[700], Colors.red[700], stuckAmount),
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
                 alignment: Alignment.centerLeft,
                 child: Row(
@@ -121,9 +122,8 @@ class Example2 extends StatelessWidget {
                         opacity: stuckAmount,
                         child: IconButton(
                           icon: Icon(Icons.favorite, color: Colors.white),
-                          onPressed: () =>
-                              Scaffold.of(context).showSnackBar(
-                                  SnackBar(content: Text('Favorite #$index'))),
+                          onPressed: () => Scaffold.of(context).showSnackBar(
+                              SnackBar(content: Text('Favorite #$index'))),
                         ),
                       ),
                     ),
